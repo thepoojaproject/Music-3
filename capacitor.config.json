@@ -1,0 +1,8 @@
+{
+  "appId": "com.ambient.musicplayer",
+  "appName": "Stress Relief Player",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

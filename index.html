@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Take a deep breath...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        /* Phone Screen Canvas */
+        .player-card {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 860px;
+            border-radius: 40px;
+            overflow: hidden;
+            background: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop') center 20%/cover no-repeat;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 50px 30px 45px 30px;
+            transition: background 0.5s ease;
+        }
+
+        /* Warm Ambient Glow Overlay */
+        .player-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 25%, rgba(255, 120, 0, 0.65), rgba(200, 50, 0, 0.82) 65%, rgba(20, 5, 0, 0.96));
+            mix-blend-mode: hard-light;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .player-card.bright-theme::before {
+            background: radial-gradient(circle at 50% 25%, rgba(255, 160, 50, 0.75), rgba(220, 90, 10, 0.85) 65%, rgba(40, 10, 0, 0.92));
+        }
+
+        .player-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.12);
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Right Vertical Progress Rail */
+        .progress-rail {
+            position: absolute;
+            right: 10px;
+            top: 25px;
+            bottom: 65px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.25);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 0%;
+            background: #ffffff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+
+        .time-label {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            transform: translateX(-12px);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
+        /* Header UI */
+        .header {
+            margin-top: 85px;
+            padding-right: 35px;
+        }
+
+        .badge-btn {
+            display: inline-block;
+            padding: 8px 18px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 22px;
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .badge-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        #file-input { display: none; }
+
+        .title {
+            font-size: 27px;
+            font-weight: 400;
+            letter-spacing: -0.4px;
+            margin-bottom: 8px;
+            color: #ffffff;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1.5px;
+            font-weight: 300;
+        }
+
+        /* Controls Section */
+        .controls-group {
+            margin-top: auto;
+            margin-bottom: 35px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding-right: 35px;
+        }
+
+        .glass-slider {
+            position: relative;
+            height: 54px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 27px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .slider-pill {
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            bottom: 4px;
+            width: 54%;
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 23px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .pill-handle {
+            width: 2px;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1px;
+        }
+
+        .slider-label {
+            position: relative;
+            z-index: 2;
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+        }
+
+        .theme-pipe {
+            opacity: 0.8;
+            margin-right: 8px;
+            font-weight: 300;
+        }
+
+        .dots-indicator {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 18px;
+        }
+
+        .dot {
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.45);
+            border-radius: 50%;
+        }
+
+        .slider-value {
+            position: relative;
+            z-index: 2;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 400;
+        }
+
+        /* Play Bar Capsule */
+        .play-bar {
+            position: relative;
+            padding-right: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .play-capsule {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.32);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 40px;
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .btn-circle {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-circle:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-play {
+            width: 62px;
+            height: 62px;
+            background: #ffffff;
+            color: #000000;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn-play:active {
+            transform: scale(0.94);
+        }
+
+        .skip-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .skip-text {
+            position: absolute;
+            font-size: 8px;
+            font-weight: 600;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-card" id="card-container">
+        <div class="content">
+            
+            <div class="progress-rail" id="progress-rail">
+                <span class="time-label" id="current-time">4:15</span>
+                <div class="progress-fill" id="progress-fill"></div>
+                <span class="time-label" id="total-duration">15:10</span>
+            </div>
+
+            <div class="header">
+                <label for="file-input" class="badge-btn">Stress Relief</label>
+                <input type="file" id="file-input" accept="audio/*">
+                
+                <h1 class="title" id="song-title">Take a deep breath...</h1>
+                <div class="subtitle" id="song-artist">5...4...3...2...</div>
+            </div>
+
+            <div class="controls-group">
+                <div class="glass-slider" id="volume-slider">
+                    <div class="slider-pill" id="volume-pill" style="width: 54%;">
+                        <div class="pill-handle"></div>
+                    </div>
+                    <span class="slider-label">Volume</span>
+                    <div class="dots-indicator">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                    <span class="slider-value" id="volume-val">54</span>
+                </div>
+
+                <div class="glass-slider" id="theme-slider">
+                    <span class="slider-label"><span class="theme-pipe">|</span> Theme</span>
+                    <div class="dots-indicator">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                    <span class="slider-value" id="theme-val">Bright</span>
+                </div>
+            </div>
+
+            <div class="play-bar">
+                <div class="play-capsule">
+                    <button class="btn-circle" id="rewind-btn" title="Rewind 10s">
+                        <div class="skip-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 5C7.02944 5 3 9.02944 3 14C3 18.9706 7.02944 23 12 23C16.9706 23 21 18.9706 21 14"></path>
+                                <path d="M12 5L15 2M12 5L15 8"></path>
+                            </svg>
+                            <span class="skip-text">10</span>
+                        </div>
+                    </button>
+
+                    <button class="btn-play" id="play-btn">
+                        <svg id="play-icon" width="14" height="16" viewBox="0 0 16 18">
+                            <path d="M1 1L15 9L1 17V1Z" fill="#000000" />
+                        </svg>
+                    </button>
+
+                    <button class="btn-circle" id="forward-btn" title="Forward 10s">
+                        <div class="skip-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 5C16.9706 5 21 9.02944 21 14C21 18.9706 16.9706 23 12 23C7.02944 23 3 18.9706 3 14"></path>
+                                <path d="M12 5L9 2M12 5L9 8"></path>
+                            </svg>
+                            <span class="skip-text">10</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <audio id="audio-player"></audio>
+
+    <script>
+        const audio = document.getElementById('audio-player');
+        const fileInput = document.getElementById('file-input');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const songTitle = document.getElementById('song-title');
+        const songArtist = document.getElementById('song-artist');
+        const progressFill = document.getElementById('progress-fill');
+        const progressRail = document.getElementById('progress-rail');
+        const currentTimeElem = document.getElementById('current-time');
+        const durationElem = document.getElementById('total-duration');
+        const cardContainer = document.getElementById('card-container');
+
+        // File Input Select
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                audio.src = URL.createObjectURL(file);
+                songTitle.textContent = file.name.replace(/\.[^/.]+$/, "");
+                songArtist.textContent = "Local Device File";
+                audio.play();
+                updatePlayIcon(true);
+            }
+        });
+
+        // Play/Pause Engine
+        playBtn.addEventListener('click', () => {
+            if (!audio.src) {
+                fileInput.click();
+                return;
+            }
+            if (audio.paused) {
+                audio.play();
+                updatePlayIcon(true);
+            } else {
+                audio.pause();
+                updatePlayIcon(false);
+            }
+        });
+
+        function updatePlayIcon(isPlaying) {
+            if (isPlaying) {
+                playIcon.innerHTML = `<rect x="2" y="1" width="4" height="14" rx="1" fill="#000"/><rect x="10" y="1" width="4" height="14" rx="1" fill="#000"/>`;
+            } else {
+                playIcon.innerHTML = `<path d="M1 1L15 9L1 17V1Z" fill="#000"/>`;
+            }
+        }
+
+        // Forward & Rewind 10s
+        document.getElementById('rewind-btn').addEventListener('click', () => {
+            audio.currentTime = Math.max(0, audio.currentTime - 10);
+        });
+
+        document.getElementById('forward-btn').addEventListener('click', () => {
+            audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+        });
+
+        // Track Progress
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const pct = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.height = `${pct}%`;
+                currentTimeElem.textContent = formatTime(audio.currentTime);
+            }
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            durationElem.textContent = formatTime(audio.duration);
+        });
+
+        // Seeking via vertical rail
+        progressRail.addEventListener('click', (e) => {
+            if (!audio.duration) return;
+            const rect = progressRail.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const pct = clickY / rect.height;
+            audio.currentTime = pct * audio.duration;
+        });
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Volume Drag Control
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumePill = document.getElementById('volume-pill');
+        const volumeVal = document.getElementById('volume-val');
+        let isDragging = false;
+
+        function updateVolume(e) {
+            const rect = volumeSlider.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            x = Math.max(10, Math.min(x, rect.width - 10));
+            const percentage = Math.round((x / rect.width) * 100);
+            volumePill.style.width = `${percentage}%`;
+            volumeVal.textContent = percentage;
+            audio.volume = percentage / 100;
+        }
+
+        volumeSlider.addEventListener('mousedown', (e) => { isDragging = true; updateVolume(e); });
+        window.addEventListener('mousemove', (e) => { if (isDragging) updateVolume(e); });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // Touch support for Volume
+        volumeSlider.addEventListener('touchmove', (e) => {
+            updateVolume(e.touches[0]);
+        });
+
+        // Theme Toggle
+        const themeSlider = document.getElementById('theme-slider');
+        const themeVal = document.getElementById('theme-val');
+        let isBright = true;
+
+        themeSlider.addEventListener('click', () => {
+            isBright = !isBright;
+            if (isBright) {
+                themeVal.textContent = 'Bright';
+                cardContainer.classList.add('bright-theme');
+            } else {
+                themeVal.textContent = 'Warm';
+                cardContainer.classList.remove('bright-theme');
+            }
+        });
+    </script>
+</body>
+</html>
